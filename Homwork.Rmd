@@ -1,0 +1,62 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+
+```{r}
+#Install and load essential packages and libraries
+library(dslabs)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+ 
+
+# Only the nationwide poll from December 2015 are selected.
+poll_us_election_2016 <- polls_us_election_2016%>%
+                         filter(state == "U.S." & enddate >="2015-12-01")
+
+# Converting the enddate yy-mm-dd format to months              
+poll_us_election_2016$enddate <- months(as.Date(poll_us_election_2016$enddate))
+#The column has been chaanged to endmonth
+names(poll_us_election_2016)[which(names(poll_us_election_2016)=="enddate")]<-"poll_endmonth"
+
+
+poll_trump_clinton <- poll_us_election_2016%>%
+   #All columns not necessary in our analysis  are not slected
+                  select(-rawpoll_johnson,-rawpoll_mcmullin,
+                  -adjpoll_johnson,-adjpoll_mcmullin,-population,-grade)%>%
+  #table is arranged by start date
+                  arrange(startdate)%>% 
+  # grouped by endmonth to calcuate average poll% per month for eac candidate,Adjusted and unadjusted
+                 group_by(poll_endmonth)%>% 
+                 mutate(Trump = mean(rawpoll_trump),Clinton = mean(rawpoll_clinton),
+                Trump_adj = mean(adjpoll_trump), Clinton_adj = mean(adjpoll_clinton))
+# All the duplicated month are removed
+Final_table <-poll_trump_clinton[!duplicated(poll_trump_clinton$poll_endmonth),]
+
+#Code for arranging month in order on X-axis
+poll_endmonth <- factor(Final_table$poll_endmonth, levels = substr(month.name, 1, 3))
+#Barplot code
+barplot(cbind(Trump, Clinton) ~ poll_endmonth, data = Final_table,ylab="% of Polls", 
+        xlab = "Months",main = "Trump vs Clinton Unadjusted", beside = TRUE,
+         col = c("#8B0000", "#1b98e0"))
+
+#Code for legend
+legend("bottomright",             
+       legend = c("Trump", "Clinton"),
+       fill = c("#8B0000", "#1b98e0"))
+
+#Barplot code for adjusted values
+barplot(cbind(Trump, Clinton) ~ poll_endmonth, data = Final_table,ylab="% of Polls", 
+        xlab = "Months",main = "Trump vs Clinton Adjusted", beside = TRUE,
+         col = c("#8B0000", "#1b98e0"))
+
+
+
+
+```
+
